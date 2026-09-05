@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -9,7 +9,10 @@ import {
 export default function App() {
   const [activeTab, setActiveTab] = useState('form');
   const [tracks, setTracks] = useState([]);
-  const [selectedTrack, setSelectedTrack] = useState(null);
+  const [selectedTrackId, setSelectedTrackId] = useState(null);
+  const [activeProfile, setActiveProfile] = useState(null);
+  const [genreFilter, setGenreFilter] = useState('All');
+
   const [formData, setFormData] = useState({
     title: '',
     genre: 'Pop',
@@ -19,6 +22,15 @@ export default function App() {
     role: 'Creator',
   });
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    if (selectedTrackId) {
+      const foundTrack = tracks.find((track) => track.id === selectedTrackId);
+      setActiveProfile(foundTrack || null);
+    } else {
+      setActiveProfile(null);
+    }
+  }, [selectedTrackId, tracks]);
 
   const validateForm = () => {
     let tempErrors = {};
@@ -62,6 +74,10 @@ export default function App() {
     setActiveTab('table');
   };
 
+  const filteredTracks = genreFilter === 'All'
+    ? tracks
+    : tracks.filter((track) => track.genre === genreFilter);
+
   const columns = [
     { header: 'Title', accessorKey: 'title' },
     { header: 'Artist', accessorKey: 'artist' },
@@ -72,7 +88,7 @@ export default function App() {
   ];
 
   const table = useReactTable({
-    data: tracks,
+    data: filteredTracks,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -84,7 +100,7 @@ export default function App() {
       <div className="max-w-4xl mx-auto space-y-6">
         <header className="border-b border-slate-800 pb-4 text-center">
           <h1 className="text-3xl font-bold text-green-400">Spotify Track & Playlist Manager</h1>
-          <p className="text-slate-400 text-sm mt-1">Phase 2: Styled Registry & TanStack Table</p>
+          <p className="text-slate-400 text-sm mt-1">TUBAL, JOSE GABRIEL - SET 1</p>
           
           <div className="flex justify-center gap-4 mt-4">
             <button
@@ -214,87 +230,132 @@ export default function App() {
         )}
 
         {activeTab === 'table' && (
-          <section className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-md">
-            <h2 className="text-xl font-semibold text-white mb-4">Track Registry Table</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-300">
-                <thead className="bg-slate-900 text-slate-400 uppercase text-xs">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th key={header.id} className="p-3 border-b border-slate-700">
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {table.getRowModel().rows.length > 0 ? (
-                    table.getRowModel().rows.map((row) => (
-                      <tr
-                        key={row.id}
-                        onClick={() => setSelectedTrack(row.original)}
-                        className={`border-b border-slate-700 cursor-pointer transition ${
-                          selectedTrack?.id === row.original.id
-                            ? 'bg-slate-700 text-green-400'
-                            : 'hover:bg-slate-700/50'
-                        }`}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <td key={cell.id} className="p-3">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
+          <div className="space-y-6">
+            <section className="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-md">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold text-white">Track Registry Table</h2>
+                
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-slate-400">Filter Genre:</label>
+                  <select
+                    value={genreFilter}
+                    onChange={(e) => setGenreFilter(e.target.value)}
+                    className="bg-slate-900 border border-slate-700 rounded text-xs p-1 text-white focus:outline-none focus:border-green-400"
+                  >
+                    <option value="All">All Genres</option>
+                    <option value="Pop">Pop</option>
+                    <option value="Rock">Rock</option>
+                    <option value="Indie">Indie</option>
+                    <option value="Jazz">Jazz</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-slate-300">
+                  <thead className="bg-slate-900 text-slate-400 uppercase text-xs">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th key={header.id} className="p-3 border-b border-slate-700">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </th>
                         ))}
                       </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={columns.length} className="text-center p-4 text-slate-500">
-                        No tracks added yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex items-center justify-between mt-4 text-xs text-slate-400">
-              <div>
-                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
+                    ))}
+                  </thead>
+                  <tbody>
+                    {table.getRowModel().rows.length > 0 ? (
+                      table.getRowModel().rows.map((row) => (
+                        <tr
+                          key={row.id}
+                          onClick={() => setSelectedTrackId(row.original.id)}
+                          className={`border-b border-slate-700 cursor-pointer transition ${
+                            selectedTrackId === row.original.id
+                              ? 'bg-slate-700 text-green-400 font-semibold'
+                              : 'hover:bg-slate-700/50'
+                          }`}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <td key={cell.id} className="p-3">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={columns.length} className="text-center p-4 text-slate-500">
+                          No tracks match the criteria.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  className="px-3 py-1 bg-slate-700 rounded disabled:opacity-50"
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  className="px-3 py-1 bg-slate-700 rounded disabled:opacity-50"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
-          </section>
-        )}
 
-        {selectedTrack && activeTab === 'table' && (
-          <section className="bg-slate-800 p-6 rounded-xl border border-green-500 shadow-md">
-            <h2 className="text-xl font-semibold text-green-400 mb-2">Active Track Details</h2>
-            <div className="grid grid-cols-2 gap-2 text-sm text-slate-300">
-              <p><strong>Title:</strong> {selectedTrack.title}</p>
-              <p><strong>Artist:</strong> {selectedTrack.artist}</p>
-              <p><strong>Genre:</strong> {selectedTrack.genre}</p>
-              <p><strong>Rating/BPM:</strong> {selectedTrack.rating}</p>
-              <p><strong>Label:</strong> {selectedTrack.label}</p>
-              <p><strong>Role:</strong> {selectedTrack.role}</p>
-            </div>
-          </section>
+              <div className="flex items-center justify-between mt-4 text-xs text-slate-400">
+                <div>
+                  {table.getState().pagination.pageIndex + 1} of {table.getPageCount() || 1}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                    className="px-3 py-1 bg-slate-700 rounded disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                    className="px-3 py-1 bg-slate-700 rounded disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {activeProfile && (
+              <section className="bg-slate-800 p-6 rounded-xl border border-green-500/50 shadow-md">
+                <div className="flex justify-between items-start mb-4 border-b border-slate-700 pb-3">
+                  <div>
+                    <h2 className="text-xl font-bold text-green-400">{activeProfile.title}</h2>
+                    <p className="text-slate-400 text-xs">Artist: {activeProfile.artist}</p>
+                  </div>
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                      activeProfile.role === 'Creator'
+                        ? 'bg-purple-900/60 text-purple-300 border-purple-500'
+                        : 'bg-blue-900/60 text-blue-300 border-blue-500'
+                    }`}
+                  >
+                    {activeProfile.role} Badge
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-sm text-slate-300">
+                  <div>
+                    <span className="text-slate-500 block text-xs">Genre</span>
+                    <p className="font-medium">{activeProfile.genre}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs">Rating / BPM</span>
+                    <p className="font-medium">{activeProfile.rating}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs">Record Label</span>
+                    <p className="font-medium">{activeProfile.label}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-xs">Track ID</span>
+                    <p className="font-medium text-xs font-mono">{activeProfile.id}</p>
+                  </div>
+                </div>
+              </section>
+            )}
+          </div>
         )}
       </div>
     </div>
